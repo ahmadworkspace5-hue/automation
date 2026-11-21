@@ -17,7 +17,7 @@ on:
         default: "20"
         type: string
       max_leads:
-        description: "Max leads to draft/send"
+        description: "Max leads to draft/send (hard cap: 25 emails/day)"
         required: false
         default: "10"
         type: string
@@ -59,3 +59,16 @@ jobs:
             data/leads.csv
             data/outreach_drafts.csv
             data/last_run.json
+      # Publish the leads to the GitHub Pages web page: the page
+      # reads leads.json straight from the site, so no download
+      # is needed to see the leads, their scores and details.
+      - name: Publish leads to the web page
+        if: always()
+        run: |
+          if [ -f leads.json ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add leads.json
+            git diff --cached --quiet || git commit -m "Update leads from ${{ inputs.niche }} in ${{ inputs.location }} (run ${{ github.run_number }})"
+            git push || echo "leads.json unchanged or push skipped"
+          fi
