@@ -18,6 +18,8 @@ class Settings:
     dry_run: bool = True
     # Outdated threshold: modern_score < this = lead
     outdated_threshold: int = 50
+    # Hard cap: never send more than this many emails in one day
+    max_emails_per_day: int = 25
     request_timeout: int = 15
     delay_between_sites: float = 1.0
     # Optional paid discovery (better coverage than free OSM)
