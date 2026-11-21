@@ -11,9 +11,9 @@ def test_breakdown_has_all_categories():
 
 
 def test_old_site_is_a_lead_and_sorted_first():
-    # A site that fails to load scores 10 and is outdated.
+    # A site that fails to load is skipped, not scored as outdated.
     a = analyze_url("https://nonexistent-website-12345.invalid")
-    assert a.is_outdated and a.modern_score == 10
+    assert not a.is_outdated and a.modern_score == 10
     assert a.breakdown["Design freshness"] == 10
     leads = [
         {"business": "New", "modern_score": 45},
