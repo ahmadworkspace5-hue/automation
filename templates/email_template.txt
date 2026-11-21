@@ -1,0 +1,17 @@
+Hello {business_name} team,
+
+I noticed your website ({website}) has {issues}, and could benefit from a modern look.
+
+In today's digital world, having an attractive, professional, and modern website can help attract more visitors, keep potential customers engaged, and improve your overall online presence.
+
+If you're interested, I can create a completely modern, high-quality website for your business using the latest AI technologies, advanced animations, modern UI/UX design, and trending web development techniques — giving your business a fresh and impressive online presence.
+
+Would you be open to a quick look at what that could look like for {business_name}? No obligation — happy to share a short preview first.
+
+Best regards,
+{sender_name}
+{sender_business}
+{sender_email}
+{sender_website}
+
+P.S. If this isn't relevant, just let me know and I won't follow up.
