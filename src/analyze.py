@@ -47,10 +47,16 @@ def analyze_url(url: str, timeout: int = 15, threshold: int = 50) -> Analysis:
         html, final_url = fetch(url, timeout)
         a.url = final_url
     except Exception as e:
+        # A site that does not load (SSL error, 403, timeout) is NOT
+        # proof it is outdated — many modern sites block bots or
+        # have a broken certificate. Treat it as unscorable and
+        # skip it, instead of calling it a lead with score 10.
+        # (The 2026-11-21 restaurant run scored several such sites
+        # 10/100 and listed them as outdated, which was misleading.)
         a.error = str(e)[:200]
-        a.reasons.append(f"Website did not load reliably ({a.error})")
+        a.reasons.append(f"Website did not load reliably ({a.error}) — skipped, not scored as outdated")
         a.modern_score = 10
-        a.is_outdated = True
+        a.is_outdated = False
         a.breakdown = {"Responsive": 0, "Layout": 0, "Animation": 0,
                        "Modern tech": 0, "Security": 0, "Design freshness": 10}
         return a
