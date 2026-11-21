@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead Outreach Studio — AI Website Lead Generation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #070b16;
+    --card: rgba(255, 255, 255, 0.06);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: #eef2ff;
+    --muted: #9aa5c4;
+    --accent: #7c5cff;
+    --accent2: #00d4ff;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  /* Animated background */
+  .bg { position: fixed; inset: 0; z-index: -2; background:
+    radial-gradient(600px 400px at 15% 10%, rgba(124,92,255,.35), transparent 60%),
+    radial-gradient(700px 500px at 85% 20%, rgba(0,212,255,.28), transparent 60%),
+    radial-gradient(600px 500px at 50% 100%, rgba(255,92,180,.18), transparent 60%),
+    var(--bg);
+    animation: hue 18s ease-in-out infinite alternate; }
+  @keyframes hue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(25deg); } }
+  .orb { position: fixed; border-radius: 50%; filter: blur(70px); opacity: .5; z-index: -1; animation: float 12s ease-in-out infinite; }
+  .orb.a { width: 340px; height: 340px; background: #7c5cff; top: -80px; left: -80px; }
+  .orb.b { width: 300px; height: 300px; background: #00d4ff; bottom: -60px; right: -40px; animation-delay: -6s; }
+  @keyframes float { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-30px) scale(1.08); } }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 64px; }
+  header { text-align: center; margin-bottom: 32px; animation: fadeUp .7s ease both; }
+  .badge { display: inline-block; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent2); border: 1px solid rgba(0,212,255,.4); background: rgba(0,212,255,.08);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 16px; }
+  h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.05; font-weight: 800;
+    background: linear-gradient(90deg, #fff, #a5b4fc, #67e8f9);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  h1 span { background: linear-gradient(90deg, #7c5cff, #00d4ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  header p { color: var(--muted); margin-top: 14px; font-size: 17px; line-height: 1.6; max-width: 620px; margin-left: auto; margin-right: auto; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 24px;
+    padding: 28px; backdrop-filter: blur(14px); box-shadow: 0 24px 60px rgba(0,0,0,.4);
+    animation: fadeUp .7s ease both; animation-delay: .1s; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+  label { display: block; font-size: 13px; font-weight: 600; letter-spacing: .04em; color: var(--muted); margin: 20px 0 8px; text-transform: uppercase; }
+  label:first-child { margin-top: 0; }
+  input[type=text], input[type=password], select {
+    width: 100%; padding: 14px 16px; font-size: 16px; color: var(--text);
+    background: rgba(0,0,0,.35); border: 1px solid var(--border); border-radius: 14px; outline: none;
+    transition: border-color .2s, box-shadow .2s; }
+  input:focus, select:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(0,212,255,.2); }
+  select option { background: #141a2e; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+  .slider-row { display: flex; align-items: center; gap: 14px; }
+  .slider-row output { min-width: 34px; text-align: center; font-weight: 700; font-size: 18px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 10px; padding: 6px 10px; }
+  input[type=range] { flex: 1; accent-color: var(--accent2); height: 6px; cursor: pointer; }
+
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    background: rgba(0,0,0,.25); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-top: 20px; }
+  .toggle b { display: block; font-size: 15px; }
+  .toggle small { color: var(--muted); line-height: 1.5; display: block; margin-top: 2px; }
+  .switch { position: relative; width: 52px; height: 30px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: #334155; border-radius: 999px; cursor: pointer; transition: .25s; }
+  .slider:before { content: ""; position: absolute; width: 22px; height: 22px; left: 4px; top: 4px; background: #fff; border-radius: 50%; transition: .25s; }
+  .switch input:checked + .slider { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .switch input:checked + .slider:before { transform: translateX(22px); }
+
+  .warn { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5;
+    background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.4); color: #fcd34d; }
+  .warn.show { display: block; }
+
+  .run-btn { width: 100%; margin-top: 26px; padding: 17px; font-size: 18px; font-weight: 800; color: #fff;
+    border: none; border-radius: 16px; cursor: pointer; position: relative; overflow: hidden;
+    background: linear-gradient(90deg, var(--accent), var(--accent2)); background-size: 200% 100%;
+    transition: transform .15s, background-position .4s; animation: shine 3s linear infinite; }
+  @keyframes shine { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
+  .run-btn:hover { transform: translateY(-2px); }
+  .run-btn:disabled { opacity: .6; cursor: wait; transform: none; }
+
+  .status { margin-top: 22px; padding: 16px; border-radius: 14px; border: 1px solid var(--border);
+    background: rgba(0,0,0,.3); font-size: 15px; line-height: 1.7; display: none; }
+  .status.show { display: block; animation: fadeUp .4s ease both; }
+  .status .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+  .dot.run { background: var(--amber); animation: pulse 1s infinite; }
+  .dot.ok { background: var(--green); }
+  .dot.bad { background: var(--red); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+  .status a { color: var(--accent2); }
+  .status button { margin-top: 10px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--accent2);
+    background: transparent; color: var(--accent2); font-weight: 700; cursor: pointer; }
+  .status button:hover { background: rgba(0,212,255,.12); }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 20px; }
+  @media (max-width: 600px) { .steps { grid-template-columns: 1fr; } }
+  .step { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px;
+    animation: fadeUp .7s ease both; animation-delay: .2s; }
+  .step .n { font-size: 26px; font-weight: 800; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .step b { display: block; margin: 8px 0 4px; }
+  .step p { color: var(--muted); font-size: 14px; line-height: 1.55; }
+
+  details { margin-top: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px 20px; }
+  summary { cursor: pointer; font-weight: 700; }
+  details p, details ol { color: var(--muted); font-size: 14px; line-height: 1.7; margin-top: 10px; }
+  details ol { padding-left: 20px; }
+  details a { color: var(--accent2); }
+  details code { background: rgba(0,0,0,.4); padding: 2px 6px; border-radius: 6px; color: #e0e7ff; }
+  .token-row { display: flex; gap: 10px; margin-top: 12px; }
+  .token-row input { flex: 1; }
+  .token-row button { padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.08); color: var(--text); font-weight: 700; cursor: pointer; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 32px; line-height: 1.7; }
+  footer a { color: var(--accent2); }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="orb a"></div>
+<div class="orb b"></div>
+
+<div class="wrap">
+  <header>
+    <div class="badge">✦ AI Website Lead Generation</div>
+    <h1>Find outdated websites.<br><span>Win new clients.</span></h1>
+    <p>Pick a city and a niche — the automation finds businesses, checks their websites for outdated design, finds their public email, and drafts a personal outreach message for you.</p>
+  </header>
+
+  <div class="card">
+    <label for="location">📍 Location / City</label>
+    <input type="text" id="location" value="Lahore" placeholder="e.g. Lahore, Austin, TX, London">
+
+    <label for="niche">🏢 Business niche</label>
+    <select id="niche">
+      <option value="Clinic" selected>Clinic</option>
+      <option value="dental clinic">Dental clinic</option>
+      <option value="restaurant">Restaurant</option>
+      <option value="hotel">Hotel</option>
+      <option value="cafe">Cafe</option>
+      <option value="gym">Gym</option>
+      <option value="salon">Salon</option>
+      <option value="lawyer">Lawyer</option>
+      <option value="real estate">Real estate</option>
+      <option value="pharmacy">Pharmacy</option>
+      <option value="bakery">Bakery</option>
+      <option value="car repair">Car repair</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label>🔍 Max businesses to check</label>
+        <div class="slider-row">
+          <input type="range" id="maxBusinesses" min="5" max="50" step="5" value="30" oninput="document.getElementById('maxBOut').textContent=this.value">
+          <output id="maxBOut">30</output>
+        </div>
+      </div>
+      <div>
+        <label>✉️ Max leads to contact</label>
+        <div class="slider-row">
+          <input type="range" id="maxLeads" min="1" max="20" step="1" value="10" oninput="document.getElementById('maxLOut').textContent=this.value">
+          <output id="maxLOut">10</output>
+        </div>
+      </div>
+    </div>
+
+    <div class="toggle">
+      <div>
+        <b>🧪 Dry-run (safe first run)</b>
+        <small>On: only drafts are made, nothing is sent. Turn it off only when you are ready to actually send emails.</small>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="dryRun" checked onchange="document.getElementById('sendWarn').classList.toggle('show', !this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="warn" id="sendWarn">⚠️ Dry-run is OFF — this run will actually send emails to the leads it finds. Make sure the Gmail secrets are set up in the repo first.</div>
+
+    <button class="run-btn" id="runBtn" onclick="runWorkflow()">🚀 Run Lead Outreach</button>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="n">01</div><b>Discover</b><p>Finds businesses in your city &amp; niche, with their websites — Google Places, OpenStreetMap and web search.</p></div>
+    <div class="step"><div class="n">02</div><b>Analyse</b><p>Scores every website 0–100 for modern design. Below 50 = outdated lead, with the exact issues listed.</p></div>
+    <div class="step"><div class="n">03</div><b>Outreach</b><p>Finds the public business email and writes a personal message naming their website's issues. Dry-run saves drafts.</p></div>
+  </div>
+
+  <details>
+    <summary>🔑 Connect this page to your repo (one-time, 1 minute)</summary>
+    <p>GitHub Pages is a static site, so it can't run the automation by itself — it <b>triggers</b> the workflow in your repo, which does the real work. To trigger it, the page needs a GitHub token. The token is saved <b>only in your own browser</b> (local storage) — it is never sent to this site's server, and it is never put in the repo.</p>
+    <ol>
+      <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine-grained token</a></li>
+      <li>Repository access: select <b>Only select repositories → automation</b></li>
+      <li>Permissions → Actions: <b>Read and write</b>. That is all it needs.</li>
+      <li>Create it, copy it, and paste it below.</li>
+    </ol>
+    <div class="token-row">
+      <input type="password" id="token" placeholder="Paste your GitHub token here (ghp_… / github_pat_…)" autocomplete="off">
+      <button onclick="saveToken()">Save</button>
+      <button onclick="clearToken()">Clear</button>
+    </div>
+    <p id="tokenState"></p>
+    <p>Without a token you can still see the latest runs below — but the Run button needs one. You can also always run it from the repo: <a href="https://github.com/ahmadworkspace5-hue/automation/actions/workflows/lead-outreach.yml" target="_blank" rel="noopener">Actions → Lead Outreach → Run workflow</a>.</p>
+  </details>
+
+  <footer>
+    Repo: <a href="https://github.com/ahmadworkspace5-hue/automation" target="_blank" rel="noopener">ahmadworkspace5-hue/automation</a><br>
+    Results arrive as a downloadable artifact on the workflow run — <code>leads.csv</code>, <code>outreach_drafts.csv</code>, <code>last_run.json</code>.
+  </footer>
+</div>
+
+<script>
+const OWNER = "ahmadworkspace5-hue";
+const REPO = "automation";
+const WORKFLOW = "lead-outreach.yml";
+const API = "https://api.github.com";
+let pollTimer = null;
+let lastRunId = null;
+
+function getToken() { return localStorage.getItem("gh_pat") || ""; }
+function apiHeaders() {
+  const h = { "Accept": "application/vnd.github+json" };
+  const t = getToken();
+  if (t) h["Authorization"] = "Bearer " + t;
+  return h;
+}
+function saveToken() {
+  const v = document.getElementById("token").value.trim();
+  if (!v) { document.getElementById("tokenState").textContent = "Paste a token first."; return; }
+  localStorage.setItem("gh_pat", v);
+  document.getElementById("token").value = "";
+  document.getElementById("tokenState").textContent = "✅ Token saved in this browser only.";
+  refreshRuns();
+}
+function clearToken() {
+  localStorage.removeItem("gh_pat");
+  document.getElementById("tokenState").textContent = "Token cleared.";
+}
+if (getToken()) document.getElementById("tokenState").textContent = "✅ Token saved in this browser.";
+
+const statusEl = document.getElementById("status");
+function showStatus(html) { statusEl.classList.add("show"); statusEl.innerHTML = html; }
+
+async function runWorkflow() {
+  const token = getToken();
+  if (!token) {
+    showStatus('🔑 <b>Token needed.</b> Open “Connect this page to your repo” below, paste a GitHub token, save it, then press Run again.');
+    return;
+  }
+  const location = document.getElementById("location").value.trim();
+  const niche = document.getElementById("niche").value;
+  const maxBusinesses = document.getElementById("maxBusinesses").value;
+  const maxLeads = document.getElementById("maxLeads").value;
+  const dryRun = document.getElementById("dryRun").checked;
+  if (!location) { showStatus("📍 Please enter a location first."); return; }
+  const btn = document.getElementById("runBtn");
+  btn.disabled = true; btn.textContent = "⏳ Starting run…";
+  try {
+    const res = await fetch(`${API}/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
+      method: "POST",
+      headers: { ...apiHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: "main", inputs: {
+        location, niche,
+        max_businesses: String(maxBusinesses),
+        max_leads: String(maxLeads),
+        dry_run: String(dryRun)
+      }})
+    });
+    if (res.status === 204) {
+      showStatus(`<span class="dot run"></span><b>Run requested!</b> ${niche} in ${location} — checking up to ${maxBusinesses} businesses, max ${maxLeads} leads. ${dryRun ? "Dry-run: drafts only, nothing sent." : "Sending mode: emails will actually go out."}<br>Waiting for the run to appear…`);
+      setTimeout(refreshRuns, 8000);
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(refreshRuns, 15000);
+    } else {
+      const txt = await res.text();
+      showStatus(`<span class="dot bad"></span><b>Could not start the run (${res.status}).</b><br>${txt.slice(0, 300)}<br>Check the token has Actions: Read and write on the <b>automation</b> repo.`);
+    }
+  } catch (e) {
+    showStatus(`<span class="dot bad"></span><b>Network error:</b> ${e.message}`);
+  } finally {
+    btn.disabled = false; btn.textContent = "🚀 Run Lead Outreach";
+  }
+}
+
+async function refreshRuns() {
+  try {
+    const res = await fetch(`${API}/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW}/runs?per_page=1`, { headers: apiHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const run = (data.workflow_runs || [])[0];
+    if (!run) return;
+    lastRunId = run.id;
+    const done = run.status === "completed";
+    const ok = run.conclusion === "success";
+    const icon = done ? (ok ? '<span class="dot ok"></span>' : '<span class="dot bad"></span>') : '<span class="dot run"></span>';
+    let html = `${icon}<b>Latest run:</b> ${run.display_title || run.name} — <b>${run.status}</b>${done ? " (" + run.conclusion + ")" : ""}<br>` +
+      `Started ${new Date(run.created_at).toLocaleString()} · <a href="${run.html_url}" target="_blank" rel="noopener">View on GitHub ↗</a>`;
+    if (done && ok) {
+      html += `<br><button onclick="downloadArtifact()">⬇ Download leads (artifact)</button> <small style="color:var(--muted)">needs the token saved above</small>`;
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+    showStatus(html);
+  } catch (e) { /* leave the last status showing */ }
+}
+
+async function downloadArtifact() {
+  if (!lastRunId) return;
+  showStatus("⏳ Finding the artifact…");
+  try {
+    const res = await fetch(`${API}/repos/${OWNER}/${REPO}/actions/runs/${lastRunId}/artifacts`, { headers: apiHeaders() });
+    const data = await res.json();
+    const art = (data.artifacts || [])[0];
+    if (!art) { showStatus("No artifact on this run yet — open the run on GitHub to check."); return; }
+    const zip = await fetch(art.archive_download_url, { headers: { ...apiHeaders(), "Accept": "application/vnd.github+json" } });
+    if (!zip.ok) { showStatus(`Could not download the artifact (${zip.status}). Open the run on GitHub and download it there.`); return; }
+    const blob = await zip.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = art.name + ".zip";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    refreshRuns();
+  } catch (e) {
+    showStatus(`<span class="dot bad"></span>Download failed: ${e.message}. You can download it from the run page on GitHub.`);
+  }
+}
+
+refreshRuns();
+</script>
+</body>
+</html>
