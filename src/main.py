@@ -82,7 +82,8 @@ def main():
         print(f"\n📄 Loaded {len(businesses)} businesses from {args.businesses_csv}")
     else:
         print(f"\n🔍 Searching {niche} in {location} …")
-        businesses = discover(location, niche, args.max)
+        businesses = discover(location, niche, args.max,
+                              google_places_api_key=settings.google_places_api_key)
         print(f"Found {len(businesses)} businesses with websites.")
 
     leads, drafts = [], []
@@ -129,6 +130,8 @@ def main():
                    ["business", "website", "email", "location", "niche", "modern_score", "issues", "address", "phone"])
         append_csv(DATA / "outreach_drafts.csv", drafts, ["business", "email", "subject", "body", "website"])
     summary = {"location": location, "niche": niche, "businesses_checked": len(businesses),
+               "businesses_with_website": len(businesses),
+               "discovery_sources": sorted({b.source for b in businesses}),
                "leads_found": len(leads), "mode": "SEND" if args.send else "DRY-RUN",
                "leads": leads}
     (DATA / "last_run.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
