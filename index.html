@@ -125,6 +125,32 @@
   .token-row button { padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.08); color: var(--text); font-weight: 700; cursor: pointer; }
   footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 32px; line-height: 1.7; }
   footer a { color: var(--accent2); }
+
+  /* Leads shown on the page — no download needed */
+  .leads-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 34px 0 14px; }
+  .leads-head h2 { font-size: 26px; }
+  .leads-head small { color: var(--muted); }
+  .lead { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-bottom: 14px; animation: fadeUp .5s ease both; }
+  .lead-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+  .lead h3 { font-size: 19px; }
+  .lead h3 a { color: var(--text); text-decoration: none; }
+  .lead h3 a:hover { color: var(--accent2); }
+  .lead .meta { color: var(--muted); font-size: 14px; margin-top: 4px; line-height: 1.6; }
+  .score-badge { text-align: center; flex-shrink: 0; }
+  .score-badge b { font-size: 30px; display: block; line-height: 1; }
+  .score-badge span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .score-badge.old b { color: #f87171; }
+  .score-bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,.1); margin: 14px 0 6px; overflow: hidden; }
+  .score-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #ef4444, #f59e0b); }
+  .breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; margin-top: 12px; font-size: 13px; }
+  @media (max-width: 600px) { .breakdown { grid-template-columns: 1fr; } }
+  .breakdown .bd { display: flex; justify-content: space-between; gap: 10px; }
+  .breakdown .bd span:last-child { font-weight: 700; }
+  .issues { margin-top: 12px; font-size: 14px; line-height: 1.6; color: #fca5a5; }
+  .draft { margin-top: 12px; font-size: 13px; line-height: 1.6; color: var(--muted); background: rgba(0,0,0,.3); border: 1px solid var(--border); border-radius: 12px; padding: 12px; white-space: pre-wrap; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin-top: 10px; }
+  .pill.draft { background: rgba(245,158,11,.15); color: #fcd34d; }
+  .pill.sent { background: rgba(34,197,94,.15); color: #86efac; }
 </style>
 </head>
 <body>
@@ -168,9 +194,9 @@
         </div>
       </div>
       <div>
-        <label>✉️ Max leads to contact</label>
+        <label>✉️ Max leads to contact (25/day cap)</label>
         <div class="slider-row">
-          <input type="range" id="maxLeads" min="1" max="20" step="1" value="10" oninput="document.getElementById('maxLOut').textContent=this.value">
+          <input type="range" id="maxLeads" min="1" max="25" step="1" value="10" oninput="document.getElementById('maxLOut').textContent=this.value">
           <output id="maxLOut">10</output>
         </div>
       </div>
@@ -193,10 +219,18 @@
     <div class="status" id="status"></div>
   </div>
 
+  <div class="leads-head">
+    <h2>🎯 Latest leads — old websites first</h2>
+    <small id="leadsMeta">Loading…</small>
+  </div>
+  <div id="leads">
+    <div class="card" style="color: var(--muted)">No leads yet — run the automation above and they will appear here, with their website score and details. No download needed.</div>
+  </div>
+
   <div class="steps">
     <div class="step"><div class="n">01</div><b>Discover</b><p>Finds businesses in your city &amp; niche, with their websites — Google Places, OpenStreetMap and web search.</p></div>
     <div class="step"><div class="n">02</div><b>Analyse</b><p>Scores every website 0–100 for modern design. Below 50 = outdated lead, with the exact issues listed.</p></div>
-    <div class="step"><div class="n">03</div><b>Outreach</b><p>Finds the public business email and writes a personal message naming their website's issues. Dry-run saves drafts.</p></div>
+    <div class="step"><div class="n">03</div><b>Outreach</b><p>Finds the public business email and writes a personal message naming their website's issues. Sending is done by the Gmail module (<code>src/gmail_sender.py</code>) — max <b>25 emails/day</b>, oldest sites first.</p></div>
   </div>
 
   <details>
@@ -339,7 +373,48 @@ async function downloadArtifact() {
   }
 }
 
+/* Leads are published to leads.json by the workflow after every
+   run, so the page shows them directly — no download needed. */
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+async function loadLeads() {
+  const box = document.getElementById("leads");
+  const meta = document.getElementById("leadsMeta");
+  try {
+    const res = await fetch("leads.json?t=" + Date.now());
+    if (!res.ok) return; // no run has published leads yet
+    const data = await res.json();
+    const leads = (data.leads || []).slice().sort((a, b) => a.modern_score - b.modern_score);
+    if (!leads.length) {
+      meta.textContent = `${data.location || ""} · ${data.niche || ""} · ${data.businesses_checked || 0} businesses checked · 0 leads`;
+      box.innerHTML = '<div class="card" style="color: var(--muted)">That run found 0 outdated sites with a public email. Try another city or niche.</div>';
+      return;
+    }
+    meta.textContent = `${data.location || ""} · ${data.niche || ""} · ${data.businesses_checked || 0} checked · ${leads.length} leads · ${data.mode || ""} · sent today ${data.sent_today ?? 0}/25`;
+    box.innerHTML = leads.map(l => {
+      const bd = l.score_breakdown || {};
+      const bdHtml = Object.entries(bd).map(([k, v]) =>
+        `<div class="bd"><span>${esc(k)}</span><span>${v}/100</span></div>`).join("");
+      return `<div class="lead">
+        <div class="lead-top">
+          <div>
+            <h3><a href="${esc(l.website)}" target="_blank" rel="noopener">${esc(l.business)}</a></h3>
+            <div class="meta">🌐 ${esc(l.website)}<br>✉️ ${esc(l.email)}${l.phone ? " · 📞 " + esc(l.phone) : ""}</div>
+          </div>
+          <div class="score-badge old"><b>${l.modern_score}</b><span>/100 old site</span></div>
+        </div>
+        <div class="score-bar"><i style="width:${l.modern_score}%"></i></div>
+        <div class="breakdown">${bdHtml}</div>
+        <div class="issues">⚠️ ${esc(l.issues || "Outdated design")}</div>
+        ${l.subject ? `<div class="draft"><b>${esc(l.subject)}</b>\n${esc((l.body || "").slice(0, 400))}${(l.body || "").length > 400 ? "…" : ""}</div>` : ""}
+        <span class="pill ${l.sent ? "sent" : "draft"}">${l.sent ? "✅ Sent" : "📝 " + esc(l.send_status || "Draft — not sent yet")}</span>
+      </div>`;
+    }).join("");
+  } catch (e) { /* leads.json not published yet */ }
+}
+
 refreshRuns();
+loadLeads();
+setInterval(loadLeads, 60000); // refresh the leads list every minute
 </script>
 </body>
 </html>
