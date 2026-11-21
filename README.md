@@ -19,9 +19,14 @@ Enter a **location + business niche** — the system does the rest:
 ```
 location + niche
       ↓
-src/discover.py   — Nominatim geocode + Overpass API (OpenStreetMap)
-                    free, no key. Optional Google Places API for
-                    better coverage (restaurants / hotels / clinics)
+src/discover.py   — Google Places API first (if GOOGLE_PLACES_API_KEY
+                    is set — best coverage, esp. outside US/EU),
+                    then OpenStreetMap Overpass (25 km radius, wide
+                    tag set), then Nominatim, then a web search to
+                    find websites for businesses OSM knows by name
+                    only. Free OSM alone is thin in places like
+                    Lahore: the first live run ("Clinic", Lahore)
+                    found only 1 clinic with a listed website.
       ↓
 src/analyze.py    — fetches each site, scores 0–100 for modernity
                     viewport, Flexbox/Grid, CSS variables, animations,
@@ -77,6 +82,14 @@ python -m src.main --location "Austin, TX" --niche "dental clinic" \
 > from GitHub Actions, and the code now tries 3 Overpass mirrors
 > then falls back to Nominatim. For reliable discovery, add a
 > Google Places API key (`GOOGLE_PLACES_API_KEY`) — see `src/discover.py`.
+>
+> **First live GitHub run (Nov 2026):** "Clinic" in Lahore, max 30 —
+> the pipeline ran, but found only 1 business with a website and
+> 0 leads. OSM in Lahore lists almost no clinic websites. Discovery
+> was then fixed: Google Places is now actually used when a key is
+> set (it was advertised but not implemented), OSM radius went
+> 10 km → 25 km with a wider clinic tag set, and businesses OSM
+> knows by name only now get their website looked up by web search.
 
 Supported niches out of the box: dental clinic, dentist, restaurant,
 hotel, cafe, gym, salon, lawyer, real estate, plumber, electrician,
@@ -95,6 +108,18 @@ pharmacy, clinic, bakery, car repair. Add more in `src/discover.py`
 The workflow is `.github/workflows/lead-outreach.yml`.
 Results are uploaded as an artifact (`data/leads.csv`,
 `data/outreach_drafts.csv`, `data/last_run.json`).
+
+## Better discovery — Google Places (recommended)
+
+Free OpenStreetMap is thin in many cities. With a Google Places
+API key, discovery finds far more businesses with real websites.
+
+1. Google Cloud Console → enable **Places API (New)**
+2. Create an API key (restrict it to Places API)
+3. Add it as a **GitHub Secret** named `GOOGLE_PLACES_API_KEY`
+   (repo → Settings → Secrets → Actions), or in `.env` locally.
+4. Run the workflow again — no code change needed. If the key is
+   missing, the system falls back to OpenStreetMap + web search.
 
 ## Connecting Gmail (for sending)
 
