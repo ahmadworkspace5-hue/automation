@@ -66,6 +66,12 @@ def sent_today_count() -> int:
 
 
 def append_csv(path: Path, rows: list[dict], fieldnames: list[str]):
+    # Only the CSV columns — lead dicts also carry score_breakdown,
+    # subject, body and sent status for leads.json, and DictWriter
+    # raises ValueError on any extra key (that crash killed the
+    # 2026-11-21 restaurant run with exit code 1, after all 32
+    # businesses had been checked and real leads found).
+    rows = [{k: r.get(k, "") for k in fieldnames} for r in rows]
     exists = path.exists()
     with path.open("a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
@@ -176,9 +182,14 @@ def main():
     drafts.sort(key=lambda d: next((l["modern_score"] for l in leads if l["email"] == d["email"]), 99))
 
     if leads:
-        append_csv(DATA / "leads.csv", leads,
-                   ["business", "website", "email", "location", "niche", "modern_score", "issues", "address", "phone"])
-        append_csv(DATA / "outreach_drafts.csv", drafts, ["business", "email", "subject", "body", "website"])
+        # CSVs must never kill the run — leads.json is the source
+        # the web page reads, and it is written below regardless.
+        try:
+            append_csv(DATA / "leads.csv", leads,
+                       ["business", "website", "email", "location", "niche", "modern_score", "issues", "address", "phone"])
+            append_csv(DATA / "outreach_drafts.csv", drafts, ["business", "email", "subject", "body", "website"])
+        except Exception as e:
+            print(f"⚠️ Could not write CSVs ({e}) — leads.json will still be written")
     summary = {"location": location, "niche": niche, "businesses_checked": len(businesses),
                "businesses_with_website": len(businesses),
                "discovery_sources": sorted({b.source for b in businesses}),
