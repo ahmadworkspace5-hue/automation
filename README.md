@@ -121,10 +121,33 @@ API key, discovery finds far more businesses with real websites.
 4. Run the workflow again — no code change needed. If the key is
    missing, the system falls back to OpenStreetMap + web search.
 
-## Connecting Gmail (for sending)
+## The web page — leads shown, no download
 
-Sending uses the Gmail API with an OAuth refresh token — no password
-is ever stored in the repo.
+`index.html` (GitHub Pages) is the control panel: pick a city, niche,
+limits and dry-run, press Run, and the leads appear on the page itself
+— business, website, public email, overall score (lowest = oldest
+first), and a per-category breakdown (Responsive, Layout, Animation,
+Modern tech, Security, Design freshness) plus the exact issues and
+the draft email. The workflow publishes `leads.json` to the repo
+after each run, and the page reads it. No file download is needed.
+
+## Sending emails — where the module is, and the 25/day limit
+
+The sending module is **`src/gmail_sender.py`**. It is called from
+`src/main.py` only when a run is *not* a dry-run (`--send` locally,
+or dry-run off in GitHub Actions / on the web page). It sends one
+personalised email per lead through the **Gmail API** using an
+OAuth refresh token.
+
+**Daily limit: 25 emails per day, hard cap.** `src/main.py` counts
+today's sends in `data/sent_log.csv` and stops sending at 25 —
+drafts are still saved, nothing extra goes out. The web page's
+max-leads slider also stops at 25.
+
+**Why connecting Gmail to Muse is not enough:** that connection
+lets *me* read/send in this chat. GitHub Actions runs on GitHub's
+servers, on its own — it needs its own Gmail API login, stored as
+GitHub Secrets. That is a one-time setup:
 
 1. Google Cloud Console → enable **Gmail API**
 2. Create an OAuth client (Desktop app) → download `credentials.json`
@@ -133,6 +156,9 @@ is ever stored in the repo.
    `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`,
    plus `SENDER_NAME`, `SENDER_BUSINESS`, `SENDER_EMAIL`, `SENDER_WEBSITE`
 5. Locally, put the same values in `.env` (never commit it).
+
+Until those secrets are set, sending fails safely — the run still
+finds the leads and saves the drafts, and nothing is sent.
 
 ## The outreach message
 
