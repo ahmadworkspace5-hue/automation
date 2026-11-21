@@ -29,6 +29,10 @@ class Analysis:
     positives: list[str] = field(default_factory=list)
     title: str = ""
     error: str = ""
+    # Per-category scores 0-100, shown on the web page so a lead's
+    # owner can see exactly what is old: mobile, layout, animation,
+    # modern tech, security, and overall design freshness.
+    breakdown: dict[str, int] = field(default_factory=dict)
 
 
 def fetch(url: str, timeout: int = 15) -> tuple[str, str]:
@@ -47,6 +51,8 @@ def analyze_url(url: str, timeout: int = 15, threshold: int = 50) -> Analysis:
         a.reasons.append(f"Website did not load reliably ({a.error})")
         a.modern_score = 10
         a.is_outdated = True
+        a.breakdown = {"Responsive": 0, "Layout": 0, "Animation": 0,
+                       "Modern tech": 0, "Security": 0, "Design freshness": 10}
         return a
 
     soup = BeautifulSoup(html, "html.parser")
@@ -101,4 +107,28 @@ def analyze_url(url: str, timeout: int = 15, threshold: int = 50) -> Analysis:
     a.is_outdated = a.modern_score < threshold
     if a.is_outdated and not a.reasons:
         a.reasons.append("Overall design scores as outdated")
+
+    # --- per-category breakdown (0-100 each) ---
+    has_viewport = bool(soup.find("meta", attrs={"name": "viewport"}))
+    has_media = bool(re.search(r"@media", css))
+    has_anim = bool(re.search(r"@keyframes|animation\s*:|transition\s*:", css))
+    has_flex = bool(re.search(r"display\s*:\s*(flex|grid)", css + inline))
+    has_framework = bool(re.search(r"tailwind|bootstrap\s*5|react|vue|next\.js|nuxt|angular", text))
+    old_penalties = 0
+    if soup.find("table") and len(soup.find_all("table")) >= 2:
+        old_penalties += 30
+    if soup.find(["font", "center", "marquee", "frame", "frameset"]) or "flash" in text:
+        old_penalties += 30
+    if len(inline) > 2000:
+        old_penalties += 20
+    if m and int(m.group(1)) < 2018:
+        old_penalties += 20
+    a.breakdown = {
+        "Responsive": 100 if (has_viewport and has_media) else (70 if has_viewport else 0),
+        "Layout": 100 if has_flex else (40 if soup.find_all(["header", "nav", "main", "footer", "section"]) else 0),
+        "Animation": 100 if has_anim else 0,
+        "Modern tech": 100 if has_framework else (50 if ("--" in css and "var(" in css) else 0),
+        "Security": 100 if a.url.startswith("https://") else 0,
+        "Design freshness": max(0, 100 - old_penalties),
+    }
     return a
