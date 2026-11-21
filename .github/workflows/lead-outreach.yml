@@ -1,0 +1,61 @@
+name: Lead Outreach
+
+on:
+  workflow_dispatch:
+    inputs:
+      location:
+        description: "Location (city, e.g. Austin, TX)"
+        required: true
+        type: string
+      niche:
+        description: "Business niche (e.g. dental clinic, restaurant, hotel)"
+        required: true
+        type: string
+      max_businesses:
+        description: "Max businesses to check"
+        required: false
+        default: "20"
+        type: string
+      max_leads:
+        description: "Max leads to draft/send"
+        required: false
+        default: "10"
+        type: string
+      dry_run:
+        description: "Dry-run only (drafts, no emails sent)?"
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  outreach:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Run lead pipeline
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          SENDER_NAME: ${{ secrets.SENDER_NAME }}
+          SENDER_BUSINESS: ${{ secrets.SENDER_BUSINESS }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_WEBSITE: ${{ secrets.SENDER_WEBSITE }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python -m src.main --location "${{ inputs.location }}" --niche "${{ inputs.niche }}" --max ${{ inputs.max_businesses }} --max-leads ${{ inputs.max_leads }}
+          else
+            python -m src.main --location "${{ inputs.location }}" --niche "${{ inputs.niche }}" --max ${{ inputs.max_businesses }} --max-leads ${{ inputs.max_leads }} --send
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: leads-${{ inputs.niche }}-${{ github.run_number }}
+          path: |
+            data/leads.csv
+            data/outreach_drafts.csv
+            data/last_run.json
