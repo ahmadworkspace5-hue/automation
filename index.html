@@ -236,12 +236,16 @@
   <details>
     <summary>🔑 Connect this page to your repo (one-time, 1 minute)</summary>
     <p>GitHub Pages is a static site, so it can't run the automation by itself — it <b>triggers</b> the workflow in your repo, which does the real work. To trigger it, the page needs a GitHub token. The token is saved <b>only in your own browser</b> (local storage) — it is never sent to this site's server, and it is never put in the repo.</p>
+    <p><b>⚠️ If you got “403 – Resource not accessible by personal access token”, your token is missing a permission.</b> The most common mistake is Actions left on <b>Read</b> instead of <b>Read and write</b>, or Contents not set at all. Make a <b>new</b> token with all of these — editing the old one often does not fix it:</p>
     <ol>
       <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine-grained token</a></li>
-      <li>Repository access: select <b>Only select repositories → automation</b></li>
-      <li>Permissions → Actions: <b>Read and write</b>. That is all it needs.</li>
-      <li>Create it, copy it, and paste it below.</li>
+      <li>Repository access: select <b>Only select repositories → automation</b> (not “All repositories”, and not another repo)</li>
+      <li>Permissions → <b>Actions: Read and write</b></li>
+      <li>Permissions → <b>Contents: Read and write</b></li>
+      <li>If you see a <b>Workflows</b> permission, set that to <b>Read and write</b> too</li>
+      <li>Create it, copy it, press <b>Clear</b> below first (to remove the old token), then paste the new one and Save.</li>
     </ol>
+    <p><b>Easier alternative — classic token:</b> open <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">Classic tokens</a> → “Generate new token (classic)”, tick <b>repo</b> and <b>workflow</b>, create it, and paste that one instead. It starts with <code>ghp_…</code>.</p>
     <div class="token-row">
       <input type="password" id="token" placeholder="Paste your GitHub token here (ghp_… / github_pat_…)" autocomplete="off">
       <button onclick="saveToken()">Save</button>
@@ -321,7 +325,7 @@ async function runWorkflow() {
       pollTimer = setInterval(refreshRuns, 15000);
     } else {
       const txt = await res.text();
-      showStatus(`<span class="dot bad"></span><b>Could not start the run (${res.status}).</b><br>${txt.slice(0, 300)}<br>Check the token has Actions: Read and write on the <b>automation</b> repo.`);
+      showStatus(`<span class="dot bad"></span><b>Could not start the run (${res.status}).</b><br>${txt.slice(0, 300)}<br><b>This means the token is missing a permission.</b> Make a NEW token with <b>Actions: Read and write</b> + <b>Contents: Read and write</b> on the <b>automation</b> repo (or a classic token with <b>repo</b> + <b>workflow</b> scopes), press Clear on this page, paste the new token, and try again. See “Connect this page to your repo” below for the exact steps.`);
     }
   } catch (e) {
     showStatus(`<span class="dot bad"></span><b>Network error:</b> ${e.message}`);
