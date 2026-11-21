@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lead Outreach Studio — AI Website Lead Generation</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -377,43 +378,98 @@ async function downloadArtifact() {
   }
 }
 
-/* Leads are published to leads.json by the workflow after every
-   run, so the page shows them directly — no download needed. */
+/* Leads are shown on this page two ways:
+   1. leads.json — published back to the repo by the workflow
+      (needs the workflow's token to have Contents write permission).
+   2. Fallback: the latest run's artifact (leads-*.zip), read
+      straight from GitHub with your saved token — no download,
+      no leads.json needed. This is what actually works today,
+      because the workflow's push of leads.json is failing silently
+      (GitHub's default token is read-only for contents). */
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-async function loadLeads() {
+function renderLeads(data, source) {
   const box = document.getElementById("leads");
   const meta = document.getElementById("leadsMeta");
+  const leads = (data.leads || []).slice().sort((a, b) => a.modern_score - b.modern_score);
+  if (!leads.length) {
+    meta.textContent = `${data.location || ""} · ${data.niche || ""} · ${data.businesses_checked || 0} businesses checked · 0 leads`;
+    box.innerHTML = '<div class="card" style="color: var(--muted)">That run found 0 outdated sites with a public email. Try another city or niche.</div>';
+    return;
+  }
+  meta.textContent = `${data.location || ""} · ${data.niche || ""} · ${data.businesses_checked || 0} checked · ${leads.length} leads · ${data.mode || ""} · sent today ${data.sent_today ?? 0}/25${source ? " · " + source : ""}`;
+  box.innerHTML = leads.map(l => {
+    const bd = l.score_breakdown || {};
+    const bdHtml = Object.entries(bd).map(([k, v]) =>
+      `<div class="bd"><span>${esc(k)}</span><span>${v}/100</span></div>`).join("");
+    return `<div class="lead">
+      <div class="lead-top">
+        <div>
+          <h3><a href="${esc(l.website)}" target="_blank" rel="noopener">${esc(l.business)}</a></h3>
+          <div class="meta">🌐 ${esc(l.website)}<br>✉️ ${esc(l.email)}${l.phone ? " · 📞 " + esc(l.phone) : ""}</div>
+        </div>
+        <div class="score-badge old"><b>${l.modern_score}</b><span>/100 old site</span></div>
+      </div>
+      <div class="score-bar"><i style="width:${l.modern_score}%"></i></div>
+      <div class="breakdown">${bdHtml}</div>
+      <div class="issues">⚠️ ${esc(l.issues || "Outdated design")}</div>
+      ${l.subject ? `<div class="draft"><b>${esc(l.subject)}</b>\n${esc((l.body || "").slice(0, 400))}${(l.body || "").length > 400 ? "…" : ""}</div>` : ""}
+      <span class="pill ${l.sent ? "sent" : "draft"}">${l.sent ? "✅ Sent" : "📝 " + esc(l.send_status || "Draft — not sent yet")}</span>
+    </div>`;
+  }).join("");
+}
+/* Minimal CSV parser (handles quoted fields) for leads.csv inside an artifact. */
+function parseCsv(text) {
+  const rows = [];
+  let row = [], cur = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; } else cur += ch; }
+    else if (ch === '"') inQ = true;
+    else if (ch === ",") { row.push(cur); cur = ""; }
+    else if (ch === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+    else if (ch !== "\r") cur += ch;
+  }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  const head = rows.shift() || [];
+  return rows.filter(r => r.length > 1).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] || ""])));
+}
+async function loadLeadsFromArtifact() {
+  const token = localStorage.getItem("gh_pat") || "";
+  if (!token) {
+    document.getElementById("leads").innerHTML = '<div class="card" style="color: var(--muted)">The leads are in the latest run’s artifact. Save your GitHub token on this page and refresh, and they’ll appear here — or press “Download leads (artifact)” above.</div>';
+    return;
+  }
+  try {
+    const runsRes = await fetch(`${API}/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW}/runs?per_page=1&status=completed`, { headers: apiHeaders() });
+    const runs = await runsRes.json();
+    const run = (runs.workflow_runs || [])[0];
+    if (!run) return;
+    const artsRes = await fetch(`${API}/repos/${OWNER}/${REPO}/actions/runs/${run.id}/artifacts`, { headers: apiHeaders() });
+    const arts = await artsRes.json();
+    const art = (arts.artifacts || [])[0];
+    if (!art) return;
+    const zipRes = await fetch(art.archive_download_url, { headers: { ...apiHeaders(), "Accept": "application/vnd.github+json" } });
+    if (!zipRes.ok) return;
+    const zip = await JSZip.loadAsync(await zipRes.blob());
+    const jsonFile = zip.file("last_run.json");
+    if (jsonFile) { renderLeads(JSON.parse(await jsonFile.async("text")), "from latest run"); return; }
+    const csvFile = zip.file("leads.csv");
+    if (csvFile) {
+      const leads = parseCsv(await csvFile.async("text")).map(l => ({
+        business: l.business, website: l.website, email: l.email,
+        modern_score: Number(l.modern_score) || 0, issues: l.issues,
+        phone: l.phone, subject: "", body: "", sent: false, send_status: "Draft — not sent yet"
+      }));
+      renderLeads({ location: "", niche: "", businesses_checked: leads.length, mode: "DRY-RUN", sent_today: 0, leads }, "from latest run");
+    }
+  } catch (e) { /* artifact read failed — keep the placeholder */ }
+}
+async function loadLeads() {
   try {
     const res = await fetch("leads.json?t=" + Date.now());
-    if (!res.ok) return; // no run has published leads yet
-    const data = await res.json();
-    const leads = (data.leads || []).slice().sort((a, b) => a.modern_score - b.modern_score);
-    if (!leads.length) {
-      meta.textContent = `${data.location || ""} · ${data.niche || ""} · ${data.businesses_checked || 0} businesses checked · 0 leads`;
-      box.innerHTML = '<div class="card" style="color: var(--muted)">That run found 0 outdated sites with a public email. Try another city or niche.</div>';
-      return;
-    }
-    meta.textContent = `${data.location || ""} · ${data.niche || ""} · ${data.businesses_checked || 0} checked · ${leads.length} leads · ${data.mode || ""} · sent today ${data.sent_today ?? 0}/25`;
-    box.innerHTML = leads.map(l => {
-      const bd = l.score_breakdown || {};
-      const bdHtml = Object.entries(bd).map(([k, v]) =>
-        `<div class="bd"><span>${esc(k)}</span><span>${v}/100</span></div>`).join("");
-      return `<div class="lead">
-        <div class="lead-top">
-          <div>
-            <h3><a href="${esc(l.website)}" target="_blank" rel="noopener">${esc(l.business)}</a></h3>
-            <div class="meta">🌐 ${esc(l.website)}<br>✉️ ${esc(l.email)}${l.phone ? " · 📞 " + esc(l.phone) : ""}</div>
-          </div>
-          <div class="score-badge old"><b>${l.modern_score}</b><span>/100 old site</span></div>
-        </div>
-        <div class="score-bar"><i style="width:${l.modern_score}%"></i></div>
-        <div class="breakdown">${bdHtml}</div>
-        <div class="issues">⚠️ ${esc(l.issues || "Outdated design")}</div>
-        ${l.subject ? `<div class="draft"><b>${esc(l.subject)}</b>\n${esc((l.body || "").slice(0, 400))}${(l.body || "").length > 400 ? "…" : ""}</div>` : ""}
-        <span class="pill ${l.sent ? "sent" : "draft"}">${l.sent ? "✅ Sent" : "📝 " + esc(l.send_status || "Draft — not sent yet")}</span>
-      </div>`;
-    }).join("");
-  } catch (e) { /* leads.json not published yet */ }
+    if (res.ok) { renderLeads(await res.json(), ""); return; }
+  } catch (e) { /* fall through to the artifact */ }
+  await loadLeadsFromArtifact();
 }
 
 refreshRuns();
